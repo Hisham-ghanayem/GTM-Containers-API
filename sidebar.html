@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      select, button { width: 100%; margin-top: 10px; }
+      #status { margin-top: 10px; color: green; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <h3>Get GTM Container Versions</h3>
+
+    <select id="accountSelect" onchange="fetchVersions()">
+      <option value="" disabled selected>Select GTM Account</option>
+    </select>
+
+    <div id="status"></div>
+
+    <script>
+      window.onload = () => {
+        google.script.run.withSuccessHandler(populateAccounts).getAccounts();
+      };
+
+      function populateAccounts(accounts) {
+        const select = document.getElementById("accountSelect");
+        accounts.forEach(acc => {
+          const option = document.createElement("option");
+          option.value = acc.accountId;
+          option.textContent = `${acc.name} (${acc.accountId})`;
+          select.appendChild(option);
+        });
+      }
+
+      function fetchVersions() {
+        const accountId = document.getElementById("accountSelect").value;
+        document.getElementById("status").textContent = "Fetching versions...";
+
+        google.script.run.withSuccessHandler(msg => {
+          document.getElementById("status").textContent = msg;
+        }).writeVersionsToSheet(accountId);
+      }
+    </script>
+  </body>
+</html>
