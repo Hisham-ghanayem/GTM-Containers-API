@@ -2,42 +2,71 @@
 <html>
   <head>
     <base target="_top">
+    //
     <style>
       select, button { width: 100%; margin-top: 10px; }
       #status { margin-top: 10px; color: green; font-weight: bold; }
     </style>
   </head>
   <body>
-    <h3>Get GTM Container Versions</h3>
+    <h3>📦 GTM Container Versions</h3> 
 
-    <select id="accountSelect" onchange="fetchVersions()">
-      <option value="" disabled selected>Select GTM Account</option>
+    <label for="accountSelect">Select GTM Account:</label>
+    <select id="accountSelect" onchange="loadContainers()">
+      <option value="" disabled selected>Select an account</option>
     </select>
 
+    <label for="containerSelect">Select GTM Container:</label>
+    <select id="containerSelect">
+      <option value="" disabled selected>Select a container</option>
+    </select>
+
+    <button onclick="fetchVersions()">Fetch Versions</button>
     <div id="status"></div>
 
     <script>
-      window.onload = () => {
+      
+      window.onload = function () {
         google.script.run.withSuccessHandler(populateAccounts).getAccounts();
       };
 
-      function populateAccounts(accounts) {
-        const select = document.getElementById("accountSelect");
-        accounts.forEach(acc => {
-          const option = document.createElement("option");
-          option.value = acc.accountId;
-          option.textContent = `${acc.name} (${acc.accountId})`;
-          select.appendChild(option);
+      function populateAccounts(accounts) { // Create  a new function that will populate the account 
+        const select = document.getElementById("accountSelect"); // define a select that will grap theselected account
+        accounts.forEach(acc => { // loop through the accounts 
+          const option = document.createElement("option"); // Create a new placeholder that called option that will create element 
+          option.value = acc.accountId; // add the account id in the option placeholder
+          option.textContent = `${acc.name} (${acc.accountId})`; // make this as a text and add the account name and the account id
+          select.appendChild(option); // make sure that the account id is attached to the container id
         });
       }
 
-      function fetchVersions() {
-        const accountId = document.getElementById("accountSelect").value;
-        document.getElementById("status").textContent = "Fetching versions...";
+      function loadContainers() {
+        const accountId = document.getElementById("accountSelect").value; // get the value of the account selected and name it accountId
+        google.script.run.withSuccessHandler(containers => { // Connect with .gs and try to go through all containers 
+          const containerSelect = document.getElementById("containerSelect"); // get the value of the selected container
+          containerSelect.innerHTML = '<option value="" disabled selected>Select a container</option>'; // Then clear the container drope down
+          containers.forEach(c => {
+            const option = document.createElement("option"); // create a new placeholder that called option it is similar to create a new row in a sheet
+            option.value = c.containerId; // this value is defined as the account containerId
+            option.textContent = `${c.name} (${c.containerId})`; // the UI text is the account name and the container Id
+            containerSelect.appendChild(option); // append this in the UI
+          });
+        }).getContainers(accountId);
+      }
 
+      function fetchVersions() { // after the user selected the account and container it is the time to fech those versions 
+        const accountId = document.getElementById("accountSelect").value; // The value of the selected account earlier
+        const containerId = document.getElementById("containerSelect").value; // The value of the selected container earlier
+
+        if (!accountId || !containerId) {
+          document.getElementById("status").textContent = "⚠️ Please select both account and container.";
+          return;
+        }
+
+        document.getElementById("status").textContent = "⏳ Fetching versions...";
         google.script.run.withSuccessHandler(msg => {
           document.getElementById("status").textContent = msg;
-        }).writeVersionsToSheet(accountId);
+        }).writeVersionsToSheet(accountId, containerId);
       }
     </script>
   </body>
